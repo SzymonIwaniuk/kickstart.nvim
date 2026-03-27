@@ -293,7 +293,15 @@ require('lazy').setup({
       }
     end,
   },
+  {
+    'stevearc/quicker.nvim',
+    ft = 'qf',
+    ---@module "quicker"
+    ---@type quicker.SetupOptions
+    opts = {},
+  },
   -- MY PLUGNS SECTION
+  --
   -- See `:help gitsigns` to understand what the configuration keys do
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
@@ -307,6 +315,14 @@ require('lazy').setup({
         delete = { text = '_' }, ---@diagnostic disable-line: missing-fields
         topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
         changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
+      },
+
+      -- Inline who changed this line
+      current_line_blame = true,
+      current_line_blame_opts = {
+        virt_text = true,
+        virt_text_pos = 'eol',
+        delay = 500,
       },
     },
   },
@@ -627,6 +643,18 @@ require('lazy').setup({
       local servers = {
         clangd = {},
         elp = {},
+        cucumber_language_server = {
+          settings = {
+            cucumber = {
+              features = { 'features/**/*.feature' },
+              glue = {
+                'steps/**/*.ts',
+                'support/**/*.ts',
+                'tests/**/*.ts',
+              },
+            },
+          },
+        },
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -710,7 +738,7 @@ require('lazy').setup({
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = false, cpp = false }
+        local disable_filetypes = { c = false, cpp = false, cucumber = true }
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
@@ -725,6 +753,8 @@ require('lazy').setup({
         c = { 'clang-format' },
         cpp = { 'clang-format' },
         erlang = { 'erlfmt', 'elp' },
+        javascript = { 'eslint_d' },
+        typescript = { 'eslint_d' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -980,3 +1010,34 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+--
+-- Test Automation Cucumber-TypeScript-Playwright config
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'cucumber',
+  callback = function()
+    vim.keymap.set('n', '<leader>gd', function()
+      local line = vim.api.nvim_get_current_line()
+      local step = line:match '^%s*[%w%*]+%s+(.*)$' or line
+
+      step = step:gsub('".-"', '.*')
+      step = step:gsub("'.-'", '.*')
+      step = step:gsub('%d+', '.*')
+      step = step:gsub('^%s*(.-)%s*$', '%1')
+
+      require('telescope.builtin').grep_string {
+        search = step,
+        use_regex = true,
+        search_dirs = { 'steps', 'support', 'tests' },
+        additional_args = function() return { '--no-ignore', '--hidden' } end,
+      }
+    end, { buffer = true, desc = '[G]o to [D]efinition (Smart Telescope)' })
+  end,
+})
+--
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+  callback = function()
+    vim.keymap.set('n', 'gd', function() require('telescope.builtin').lsp_definitions() end, { buffer = true, desc = '[G]o to [D]efinition (LSP)' })
+  end,
+})
+--
