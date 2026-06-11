@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -641,27 +641,31 @@ require('lazy').setup({
         clangd = {},
         elp = {},
         cucumber_language_server = {
+          root_dir = function(bufnr, on_dir)
+            local fname = vim.api.nvim_buf_get_name(bufnr)
+            on_dir(vim.fs.root(fname, '.git'))
+          end,
           settings = {
             cucumber = {
               features = { 'features/**/*.feature' },
               glue = {
                 'steps/**/*.ts',
                 'support/**/*.ts',
+                'pages/**/*.ts',
                 'tests/**/*.ts',
               },
             },
           },
         },
-        -- gopls = {},
+        gopls = {},
         -- pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         ts_ls = {},
-
         stylua = {}, -- Used to format Lua code
 
         -- Special Lua Config, as recommended by neovim help docs
@@ -740,7 +744,7 @@ require('lazy').setup({
           return nil
         else
           return {
-            timeout_ms = 500,
+            timeout_ms = 3000,
             lsp_format = 'fallback',
           }
         end
@@ -1016,16 +1020,75 @@ vim.api.nvim_create_autocmd('FileType', {
       local line = vim.api.nvim_get_current_line()
       local step = line:match '^%s*[%w%*]+%s+(.*)$' or line
 
-      step = step:gsub('".-"', '.*')
-      step = step:gsub("'.-'", '.*')
-      step = step:gsub('%d+', '.*')
-      step = step:gsub('^%s*(.-)%s*$', '%1')
+      local function re_esc(s)
+        return (s:gsub('([%.%+%(%)%[%]%{%}%|%^%$%\\])', '\\%1'))
+      end
+
+      local parts = {}
+      local rest = step
+      local has_param = false
+
+      while #rest > 0 do
+        local qs, qe = rest:find '"[^"]*"'
+        local ss, se = rest:find "'[^']*'"
+        local ds, de = rest:find '%d+'
+
+        -- pick the earliest parameter match
+        local fs, fe, rep = nil, nil, nil
+        if qs then fs, fe, rep = qs, qe, '.*' end
+        if ss and (not fs or ss < fs) then fs, fe, rep = ss, se, '.*' end
+        if ds and (not fs or ds < fs) then fs, fe, rep = ds, de, '\\d+' end
+
+        if fs then
+          has_param = true
+          table.insert(parts, re_esc(rest:sub(1, fs - 1)))
+          table.insert(parts, rep)
+          rest = rest:sub(fe + 1)
+        else
+          table.insert(parts, re_esc(rest))
+          break
+        end
+      end
+
+      -- Trim the trailing literal (after the last param) to avoid matching failures
+      -- caused by optional groups like (not )? and alternations like (dropdown|button)
+      -- in step definitions. Rules:
+      --   > 3 words → keep first 3  (e.g. "event label should be visible" → "event label should")
+      --   2 words   → keep first 1  (e.g. "using dropdown" → "using", avoids (dropdown|button))
+      --   1 word    → keep as-is
+      local param_reps = { ['.*'] = true, ['\\d+'] = true }
+      if has_param and #parts > 0 and not param_reps[parts[#parts]] then
+        local trailing = parts[#parts]
+        local leading_space = trailing:match '^(%s*)'
+        local words = {}
+        for w in trailing:gmatch '%S+' do table.insert(words, w) end
+        local keep = #words
+        if #words > 3 then
+          keep = 3
+        elseif #words == 2 then
+          keep = 1
+        end
+        if keep < #words then
+          parts[#parts] = leading_space .. table.concat(words, ' ', 1, keep)
+        end
+      end
+
+      local search_term
+      if has_param then
+        search_term = table.concat(parts, ''):gsub('%s+', '\\s+')
+      else
+        search_term = step:gsub('%s+', ' '):gsub('^%s*(.-)%s*$', '%1')
+      end
+
+      local file_dir = vim.fn.expand '%:p:h'
+      local git_root = vim.fn.systemlist('git -C ' .. vim.fn.shellescape(file_dir) .. ' rev-parse --show-toplevel')[1]
+      if not git_root or git_root == '' then git_root = vim.fn.getcwd() end
 
       require('telescope.builtin').grep_string {
-        search = step,
-        use_regex = true,
-        search_dirs = { 'steps', 'support', 'tests' },
-        additional_args = function() return { '--no-ignore', '--hidden' } end,
+        search = search_term,
+        use_regex = has_param,
+        search_dirs = { git_root },
+        additional_args = function() return { '--no-ignore', '--hidden', '--type', 'ts', '--type', 'js', '-i' } end,
       }
     end, { buffer = true, desc = '[G]o to [D]efinition (Smart Telescope)' })
   end,
@@ -1037,4 +1100,35 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.keymap.set('n', 'gd', function() require('telescope.builtin').lsp_definitions() end, { buffer = true, desc = '[G]o to [D]efinition (LSP)' })
   end,
 })
---
+
+-- Manual Config
+vim.keymap.set('n', 'gm', function()
+  local word = vim.fn.expand '<cword>'
+  local orig_win = vim.api.nvim_get_current_win()
+
+  pcall(function() vim.cmd('Man ' .. word) end)
+
+  local curr_win = vim.api.nvim_get_current_win()
+  local curr_buf = vim.api.nvim_get_current_buf()
+
+  if vim.bo[curr_buf].filetype == 'man' then
+    if curr_win ~= orig_win then
+      vim.cmd 'hide'
+      vim.api.nvim_win_set_buf(orig_win, curr_buf)
+      vim.api.nvim_set_current_win(orig_win)
+    end
+
+    local bufname = vim.api.nvim_buf_get_name(curr_buf)
+    local section = string.match(bufname, '%((%d+)%)')
+    vim.cmd 'redraw'
+    if section then
+      print('man ' .. section .. ' ' .. word)
+    else
+      print('man ' .. word)
+    end
+  else
+    if curr_win ~= orig_win then vim.cmd 'hide' end
+    vim.cmd 'redraw'
+    print('Not found: ' .. word)
+  end
+end, { desc = '[G]o to [M]anual' })
