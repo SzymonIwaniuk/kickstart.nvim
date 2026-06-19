@@ -1003,7 +1003,7 @@ do
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
   -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.neo-tree'
   -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
 
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
@@ -1016,7 +1016,7 @@ end
 -- vim: ts=2 sts=2 sw=2 et
 --
 -- ============================================================
--- MY CUSTOM PLUGINS (vim.pack style)
+-- MY CUSTOM PLUGINS
 -- ============================================================
 
 -- Auto pair braces { [ (
@@ -1051,9 +1051,7 @@ vim.api.nvim_create_autocmd('FileType', {
       local line = vim.api.nvim_get_current_line()
       local step = line:match '^%s*[%w%*]+%s+(.*)$' or line
 
-      local function re_esc(s)
-        return (s:gsub('([%.%+%(%)%[%]%{%}%|%^%$%\\])', '\\%1'))
-      end
+      local function re_esc(s) return (s:gsub('([%.%+%(%)%[%]%{%}%|%^%$%\\])', '\\%1')) end
 
       local parts = {}
       local rest = step
@@ -1064,11 +1062,16 @@ vim.api.nvim_create_autocmd('FileType', {
         local ss, se = rest:find "'[^']*'"
         local ds, de = rest:find '%d+'
 
-        -- pick the earliest parameter match
         local fs, fe, rep = nil, nil, nil
-        if qs then fs, fe, rep = qs, qe, '.*' end
-        if ss and (not fs or ss < fs) then fs, fe, rep = ss, se, '.*' end
-        if ds and (not fs or ds < fs) then fs, fe, rep = ds, de, '\\d+' end
+        if qs then
+          fs, fe, rep = qs, qe, '.*'
+        end
+        if ss and (not fs or ss < fs) then
+          fs, fe, rep = ss, se, '.*'
+        end
+        if ds and (not fs or ds < fs) then
+          fs, fe, rep = ds, de, '\\d+'
+        end
 
         if fs then
           has_param = true
@@ -1081,27 +1084,21 @@ vim.api.nvim_create_autocmd('FileType', {
         end
       end
 
-      -- Trim the trailing literal (after the last param) to avoid matching failures
-      -- caused by optional groups like (not )? and alternations like (dropdown|button)
-      -- in step definitions. Rules:
-      --   > 3 words → keep first 3  (e.g. "event label should be visible" → "event label should")
-      --   2 words   → keep first 1  (e.g. "using dropdown" → "using", avoids (dropdown|button))
-      --   1 word    → keep as-is
       local param_reps = { ['.*'] = true, ['\\d+'] = true }
       if has_param and #parts > 0 and not param_reps[parts[#parts]] then
         local trailing = parts[#parts]
         local leading_space = trailing:match '^(%s*)'
         local words = {}
-        for w in trailing:gmatch '%S+' do table.insert(words, w) end
+        for w in trailing:gmatch '%S+' do
+          table.insert(words, w)
+        end
         local keep = #words
         if #words > 3 then
           keep = 3
         elseif #words == 2 then
           keep = 1
         end
-        if keep < #words then
-          parts[#parts] = leading_space .. table.concat(words, ' ', 1, keep)
-        end
+        if keep < #words then parts[#parts] = leading_space .. table.concat(words, ' ', 1, keep) end
       end
 
       local search_term
