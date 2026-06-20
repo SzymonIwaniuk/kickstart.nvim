@@ -1009,36 +1009,12 @@ do
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- require 'custom.plugins'
+  require 'custom.plugins'
 end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
 --
--- ============================================================
--- MY CUSTOM PLUGINS
--- ============================================================
-
--- Auto pair braces { [ (
-vim.pack.add { gh 'windwp/nvim-autopairs' }
-require('nvim-autopairs').setup {}
-
--- PR reviews
-vim.pack.add {
-  gh 'pwntester/octo.nvim',
-  gh 'nvim-lua/plenary.nvim',
-}
-require('octo').setup {
-  enable_builtin = true,
-  use_local_fs = false,
-  default_remote = { 'upstream', 'origin' },
-  ssh_aliases = {},
-}
-
--- Quicker quickfix list
-vim.pack.add { gh 'stevearc/quicker.nvim' }
-require('quicker').setup {}
-
 -- ============================================================
 -- MY CUSTOM KEYMAPS
 -- ============================================================
