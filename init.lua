@@ -220,10 +220,10 @@ do
   vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
   -- TIP: Disable arrow keys in normal mode
-  -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
-  -- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
-  -- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
-  -- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+  vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+  vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+  vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+  vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
   -- Keybinds to make split navigation easier.
   --  Use CTRL+<hjkl> to switch between windows
@@ -1016,7 +1016,7 @@ end
 -- vim: ts=2 sts=2 sw=2 et
 --
 -- ============================================================
--- MY CUSTOM KEYMAPS
+-- MY CUSTOM CONFIG
 -- ============================================================
 
 -- Test Automation Cucumber-TypeScript-Playwright config
@@ -1136,3 +1136,13 @@ vim.keymap.set('n', 'gm', function()
     print('Not found: ' .. word)
   end
 end, { desc = '[G]o to [M]anual' })
+
+-- Neogit
+vim.api.nvim_set_hl(0, 'NeogitChangeModified', { fg = 'green', bold = true })
+
+-- Terminal keymaps
+vim.keymap.set('n', '<C-w>t', ':botright 15split | terminal<CR>i', { desc = '[T]erminal split at bottom' })
+vim.keymap.set('t', '<C-h>', '<C-\\><C-n><C-w><C-h>', { desc = 'Move focus to the left window' })
+vim.keymap.set('t', '<C-j>', '<C-\\><C-n><C-w><C-j>', { desc = 'Move focus to the lower window' })
+vim.keymap.set('t', '<C-k>', '<C-\\><C-n><C-w><C-k>', { desc = 'Move focus to the upper window' })
+vim.keymap.set('t', '<C-l>', '<C-\\><C-n><C-w><C-l>', { desc = 'Move focus to the right window' })
