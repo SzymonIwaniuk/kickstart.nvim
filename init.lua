@@ -1016,94 +1016,94 @@ end
 -- vim: ts=2 sts=2 sw=2 et
 --
 -- ============================================================
--- MY CUSTOM CONFIG
+-- SECTION 11: MY CUSTOM CONFIG
 -- ============================================================
 
 -- Test Automation Cucumber-TypeScript-Playwright config
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = 'cucumber',
-  callback = function()
-    vim.keymap.set('n', '<leader>gd', function()
-      local line = vim.api.nvim_get_current_line()
-      local step = line:match '^%s*[%w%*]+%s+(.*)$' or line
-
-      local function re_esc(s) return (s:gsub('([%.%+%(%)%[%]%{%}%|%^%$%\\])', '\\%1')) end
-
-      local parts = {}
-      local rest = step
-      local has_param = false
-
-      while #rest > 0 do
-        local qs, qe = rest:find '"[^"]*"'
-        local ss, se = rest:find "'[^']*'"
-        local ds, de = rest:find '%d+'
-
-        local fs, fe, rep = nil, nil, nil
-        if qs then
-          fs, fe, rep = qs, qe, '.*'
-        end
-        if ss and (not fs or ss < fs) then
-          fs, fe, rep = ss, se, '.*'
-        end
-        if ds and (not fs or ds < fs) then
-          fs, fe, rep = ds, de, '\\d+'
-        end
-
-        if fs then
-          has_param = true
-          table.insert(parts, re_esc(rest:sub(1, fs - 1)))
-          table.insert(parts, rep)
-          rest = rest:sub(fe + 1)
-        else
-          table.insert(parts, re_esc(rest))
-          break
-        end
-      end
-
-      local param_reps = { ['.*'] = true, ['\\d+'] = true }
-      if has_param and #parts > 0 and not param_reps[parts[#parts]] then
-        local trailing = parts[#parts]
-        local leading_space = trailing:match '^(%s*)'
-        local words = {}
-        for w in trailing:gmatch '%S+' do
-          table.insert(words, w)
-        end
-        local keep = #words
-        if #words > 3 then
-          keep = 3
-        elseif #words == 2 then
-          keep = 1
-        end
-        if keep < #words then parts[#parts] = leading_space .. table.concat(words, ' ', 1, keep) end
-      end
-
-      local search_term
-      if has_param then
-        search_term = table.concat(parts, ''):gsub('%s+', '\\s+')
-      else
-        search_term = step:gsub('%s+', ' '):gsub('^%s*(.-)%s*$', '%1')
-      end
-
-      local file_dir = vim.fn.expand '%:p:h'
-      local git_root = vim.fn.systemlist('git -C ' .. vim.fn.shellescape(file_dir) .. ' rev-parse --show-toplevel')[1]
-      if not git_root or git_root == '' then git_root = vim.fn.getcwd() end
-
-      require('telescope.builtin').grep_string {
-        search = search_term,
-        use_regex = has_param,
-        search_dirs = { git_root },
-        additional_args = function() return { '--no-ignore', '--hidden', '--type', 'ts', '--type', 'js', '-i' } end,
-      }
-    end, { buffer = true, desc = '[G]o to [D]efinition (Smart Telescope)' })
-  end,
-})
+-- vim.api.nvim_create_autocmd('FileType', {
+--   pattern = 'cucumber',
+--   callback = function()
+--     vim.keymap.set('n', '<leader>gd', function()
+--       local line = vim.api.nvim_get_current_line()
+--       local step = line:match '^%s*[%w%*]+%s+(.*)$' or line
 --
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
-  callback = function()
-    vim.keymap.set('n', 'gd', function() require('telescope.builtin').lsp_definitions() end, { buffer = true, desc = '[G]o to [D]efinition (LSP)' })
-  end,
-})
+--       local function re_esc(s) return (s:gsub('([%.%+%(%)%[%]%{%}%|%^%$%\\])', '\\%1')) end
+--
+--       local parts = {}
+--       local rest = step
+--       local has_param = false
+--
+--       while #rest > 0 do
+--         local qs, qe = rest:find '"[^"]*"'
+--         local ss, se = rest:find "'[^']*'"
+--         local ds, de = rest:find '%d+'
+--
+--         local fs, fe, rep = nil, nil, nil
+--         if qs then
+--           fs, fe, rep = qs, qe, '.*'
+--         end
+--         if ss and (not fs or ss < fs) then
+--           fs, fe, rep = ss, se, '.*'
+--         end
+--         if ds and (not fs or ds < fs) then
+--           fs, fe, rep = ds, de, '\\d+'
+--         end
+--
+--         if fs then
+--           has_param = true
+--           table.insert(parts, re_esc(rest:sub(1, fs - 1)))
+--           table.insert(parts, rep)
+--           rest = rest:sub(fe + 1)
+--         else
+--           table.insert(parts, re_esc(rest))
+--           break
+--         end
+--       end
+--
+--       local param_reps = { ['.*'] = true, ['\\d+'] = true }
+--       if has_param and #parts > 0 and not param_reps[parts[#parts]] then
+--         local trailing = parts[#parts]
+--         local leading_space = trailing:match '^(%s*)'
+--         local words = {}
+--         for w in trailing:gmatch '%S+' do
+--           table.insert(words, w)
+--         end
+--         local keep = #words
+--         if #words > 3 then
+--           keep = 3
+--         elseif #words == 2 then
+--           keep = 1
+--         end
+--         if keep < #words then parts[#parts] = leading_space .. table.concat(words, ' ', 1, keep) end
+--       end
+--
+--       local search_term
+--       if has_param then
+--         search_term = table.concat(parts, ''):gsub('%s+', '\\s+')
+--       else
+--         search_term = step:gsub('%s+', ' '):gsub('^%s*(.-)%s*$', '%1')
+--       end
+--
+--       local file_dir = vim.fn.expand '%:p:h'
+--       local git_root = vim.fn.systemlist('git -C ' .. vim.fn.shellescape(file_dir) .. ' rev-parse --show-toplevel')[1]
+--       if not git_root or git_root == '' then git_root = vim.fn.getcwd() end
+--
+--       require('telescope.builtin').grep_string {
+--         search = search_term,
+--         use_regex = has_param,
+--         search_dirs = { git_root },
+--         additional_args = function() return { '--no-ignore', '--hidden', '--type', 'ts', '--type', 'js', '-i' } end,
+--       }
+--     end, { buffer = true, desc = '[G]o to [D]efinition (Smart Telescope)' })
+--   end,
+-- })
+-- --
+-- vim.api.nvim_create_autocmd('FileType', {
+--   pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+--   callback = function()
+--     vim.keymap.set('n', 'gd', function() require('telescope.builtin').lsp_definitions() end, { buffer = true, desc = '[G]o to [D]efinition (LSP)' })
+--   end,
+-- })
 
 -- Manual Config
 vim.keymap.set('n', 'gm', function()
