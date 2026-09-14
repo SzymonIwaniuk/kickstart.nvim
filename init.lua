@@ -701,34 +701,34 @@ do
   ---@type table<string, vim.lsp.Config>
   local servers = {
     -- MY CUSTOM SERVERS
-    clangd = {},
-    elp = {},
-    cucumber_language_server = {
-      root_dir = function(bufnr, on_dir)
-        local fname = vim.api.nvim_buf_get_name(bufnr)
-        on_dir(vim.fs.root(fname, '.git'))
-      end,
-      settings = {
-        cucumber = {
-          features = { 'features/**/*.feature' },
-          glue = {
-            'steps/**/*.ts',
-            'support/**/*.ts',
-            'pages/**/*.ts',
-            'tests/**/*.ts',
-          },
-        },
-      },
-    },
+    -- clangd = {},
+    -- elp = {},
+    -- cucumber_language_server = {
+    --   root_dir = function(bufnr, on_dir)
+    --     local fname = vim.api.nvim_buf_get_name(bufnr)
+    --     on_dir(vim.fs.root(fname, '.git'))
+    --   end,
+    --   settings = {
+    --     cucumber = {
+    --       features = { 'features/**/*.feature' },
+    --       glue = {
+    --         'steps/**/*.ts',
+    --         'support/**/*.ts',
+    --         'pages/**/*.ts',
+    --         'tests/**/*.ts',
+    --       },
+    --     },
+    --   },
+    -- },
     gopls = {},
-    pyright = {},
-    rust_analyzer = {},
+    -- pyright = {},
+    -- rust_analyzer = {},
     --
     -- Some languages (like typescript) have entire language plugins that can be useful:
     --    https://github.com/pmizio/typescript-tools.nvim
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
-    ts_ls = {},
+    -- ts_ls = {},
 
     stylua = {}, -- Used to format Lua code
 
@@ -825,11 +825,11 @@ do
     },
     formatters_by_ft = {
       lua = { 'stylua' },
-      c = { 'clang-format' },
-      cpp = { 'clang-format' },
-      erlang = { 'erlfmt', 'elp' },
-      javascript = { 'eslint_d' },
-      typescript = { 'eslint_d' },
+      -- c = { 'clang-format' },
+      -- cpp = { 'clang-format' },
+      -- erlang = { 'erlfmt', 'elp' },
+      -- javascript = { 'eslint_d' },
+      -- typescript = { 'eslint_d' },
       -- Conform can also run multiple formatters sequentially
       -- python = { "isort", "black" },
       --
